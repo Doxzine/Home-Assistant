@@ -5,11 +5,20 @@ load_dotenv()
 
 client = OpenAI()
 
-resp = client.responses.create(
-    model="gpt-5-nano",
-    input=text
-)
-##Prints the response!!!
-print(resp.output_text)
+def ai(text: str) -> str:
+    response = client.responses.create(
+        model="gpt-5-nano",
+        instructions="""
+        You are a home assistant.
+        Respond in briefly
+        Do not ask questions.
+        Be direct.
+
+        """,
+        input = text,
+        
+    )
+    return response.output_text
+
 
 
