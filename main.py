@@ -1,53 +1,62 @@
+import logging
+
+import pyautogui
+
 from stt import listen
 from tts import speak
 from ai import ai
 from mediacontrols import match_command
-import pyautogui
+
+logger = logging.getLogger(__name__)
+
+# Map command names to (keyboard_key, spoken_confirmation)
+MEDIA_ACTIONS: dict[str, tuple[str, str]] = {
+    "pause": ("playpause", "Paused"),
+    "play": ("playpause", "Resumed"),
+    "next": ("nexttrack", "Next track"),
+    "previous": ("prevtrack", "Going back"),
+    "mute": ("volumemute", "Toggled mute"),
+}
 
 
-##Listening start
-speak("ok")
+def handle_media_command(command: str) -> bool:
+    """Execute a media command if recognized. Returns True if handled."""
+    if command not in MEDIA_ACTIONS:
+        return False
+
+    key, confirmation = MEDIA_ACTIONS[command]
+    pyautogui.press(key)
+    speak(confirmation)
+    return True
 
 
-text = listen()
+def main() -> None:
+    """Run one cycle of the voice assistant: listen, match, respond."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    )
 
-if not text:
-    print("Didn't catch that")
-    speak("I didn't catch that")
-    exit()
+    speak("ok")
 
-command = match_command(text)
+    text = listen()
+    if not text:
+        logger.warning("No speech detected")
+        speak("I didn't catch that")
+        return
 
-if command == "pause":
-    pyautogui.press("playpause")
-    speak("Paused")
-    exit()
+    logger.info("You said: %s", text)
 
-elif command == "play":
-    pyautogui.press("playpause")
-    speak("Resumed")
-    exit()
+    # Try media commands first
+    command = match_command(text)
+    if command and handle_media_command(command):
+        return
 
-elif command == "next":
-    pyautogui.press("nexttrack")
-    speak("Next track")
-    exit()
-
-elif command == "previous":
-    pyautogui.press("prevtrack")
-    speak("Going back")
-    exit()
-    
-elif command == "mute":
-    pyautogui.press("volumemute")
-    print("Toggled mute")
-    exit()
+    # Fall back to AI response
+    response = ai(text)
+    logger.info("AI response: %s", response)
+    speak(response)
 
 
-print(text)
-print(f"You: {text}")
-airesponse = ai(text)
-print(f"AI Response: {airesponse}")
-speak(airesponse)
-    
-#raise systemexit
+if __name__ == "__main__":
+    main()

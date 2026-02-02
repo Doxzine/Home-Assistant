@@ -1,7 +1,10 @@
-from rapidfuzz import fuzz, process
+import logging
 
+from rapidfuzz import fuzz
 
-COMMAND_PHRASES = {
+logger = logging.getLogger(__name__)
+
+COMMAND_PHRASES: dict[str, list[str]] = {
     "pause": ["pause music", "pause", "stop music", "stop song", "pause song"],
     "play": ["play music", "play song", "resume music", "start music"],
     "next": ["next track", "skip", "next song", "skip track", "skip song"],
@@ -9,13 +12,17 @@ COMMAND_PHRASES = {
     "mute": ["mute volume", "unmute volume", "mute", "unmute"],
 }
 
-#Tinker with
-THRESHOLD = 60  
+THRESHOLD = 60
 
-def match_command(text: str):
+
+def match_command(text: str) -> str | None:
+    """Match user text against known media commands using fuzzy matching.
+
+    Returns the command name if the best match exceeds THRESHOLD, else None.
+    """
     text = text.lower()
 
-    best_match = None
+    best_match: str | None = None
     best_score = 0
 
     for command, phrases in COMMAND_PHRASES.items():
@@ -26,5 +33,8 @@ def match_command(text: str):
                 best_match = command
 
     if best_score >= THRESHOLD:
+        logger.info("Matched command '%s' (score: %d)", best_match, best_score)
         return best_match
+
+    logger.debug("No command matched (best score: %d)", best_score)
     return None
